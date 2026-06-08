@@ -43,8 +43,8 @@ export default function NavBar() {
                 href="/profile"
                 className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg px-3 py-1.5 transition"
               >
-                <span className="text-green-400">👤</span>
-                <span>{username}</span>
+                <span>🏆</span>
+                <span>Groups</span>
               </Link>
             ) : (
               <Link
