@@ -110,10 +110,12 @@ export default function GroupClient({ code }: { code: string }) {
     e.preventDefault();
     setJoiningError("");
     if (!usernameInput.trim()) return;
+    const stored = localStorage.getItem("account");
+    const accountId = stored ? JSON.parse(stored).id : null;
     const res = await fetch(`/api/groups/${code}/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameInput }),
+      body: JSON.stringify({ username: usernameInput, accountId }),
     });
     const data = await res.json();
     if (!res.ok) { setJoiningError(data.error); return; }

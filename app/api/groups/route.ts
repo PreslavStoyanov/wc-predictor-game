@@ -7,7 +7,7 @@ function generateCode(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, username } = await req.json();
+  const { name, username, accountId } = await req.json();
   if (!name?.trim() || !username?.trim()) {
     return NextResponse.json({ error: "Name and username required" }, { status: 400 });
   }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const { data: participant, error: partError } = await db
     .from("participants")
-    .insert({ username: username.trim(), group_id: group.id })
+    .insert({ username: username.trim(), group_id: group.id, account_id: accountId ?? null })
     .select()
     .single();
 

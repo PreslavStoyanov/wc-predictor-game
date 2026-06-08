@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -10,6 +10,16 @@ export default function Home() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("account");
+    if (stored) {
+      const acc = JSON.parse(stored);
+      setAccountId(acc.id);
+      setUsername(acc.username);
+    }
+  }, []);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -20,7 +30,7 @@ export default function Home() {
       const res = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: groupName, username }),
+        body: JSON.stringify({ name: groupName, username, accountId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -47,7 +57,7 @@ export default function Home() {
       const res = await fetch(`/api/groups/${code}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username, accountId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

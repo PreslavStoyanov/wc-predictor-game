@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { getServiceClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
-  const { username } = await req.json();
+  const { username, accountId } = await req.json();
   if (!username?.trim()) return NextResponse.json({ error: "Username required" }, { status: 400 });
 
   const db = getServiceClient();
@@ -23,11 +23,17 @@ export async function POST(req: NextRequest, { params }: { params: { code: strin
     .eq("group_id", group.id)
     .single();
 
-  if (existing) return NextResponse.json({ participant: existing, rejoined: true });
+  if (existing) {
+    // If account not yet linked, link it now
+    if (accountId && !existing.account_id) {
+      await db.from("participants").update({ account_id: accountId }).eq("id", existing.id);
+    }
+    return NextResponse.json({ participant: { ...existing, account_id: accountId ?? existing.account_id }, rejoined: true });
+  }
 
   const { data: participant, error } = await db
     .from("participants")
-    .insert({ username: username.trim(), group_id: group.id })
+    .insert({ username: username.trim(), group_id: group.id, account_id: accountId ?? null })
     .select()
     .single();
 
