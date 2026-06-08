@@ -57,6 +57,7 @@ export default function GroupClient({ code }: { code: string }) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [tab, setTab] = useState<"predictions" | "leaderboard">("predictions");
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingMatchId, setSavingMatchId] = useState<string | null>(null);
   const [localPreds, setLocalPreds] = useState<Record<string, { home: string; away: string }>>({});
@@ -91,6 +92,18 @@ export default function GroupClient({ code }: { code: string }) {
       setLocalPreds((prev) => ({ ...mine, ...prev }));
     }
     setLoading(false);
+  }, [code]);
+
+  const refreshLeaderboard = useCallback(async (groupId: string) => {
+    setRefreshing(true);
+    const [groupRes, predsRes] = await Promise.all([
+      fetch(`/api/groups/${code}`),
+      fetch(`/api/predictions?groupId=${groupId}`),
+    ]);
+    if (groupRes.ok) setGroup(await groupRes.json());
+    const predsData = await predsRes.json();
+    if (Array.isArray(predsData)) setPredictions(predsData);
+    setRefreshing(false);
   }, [code]);
 
   useEffect(() => {
@@ -263,10 +276,10 @@ export default function GroupClient({ code }: { code: string }) {
           Predictions
         </button>
         <button
-          onClick={() => setTab("leaderboard")}
+          onClick={() => { setTab("leaderboard"); if (group) refreshLeaderboard(group.id); }}
           className={`px-5 py-2 rounded-md text-sm font-medium transition ${tab === "leaderboard" ? "bg-green-600 text-white" : "text-gray-400 hover:text-white"}`}
         >
-          Leaderboard
+          {refreshing ? "Updating..." : "Leaderboard"}
         </button>
       </div>
 
