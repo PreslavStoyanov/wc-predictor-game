@@ -36,9 +36,10 @@ export default function GroupClient({ code }: { code: string }) {
   const groupIdRef = useRef<string | null>(null);
 
   const fetchGroupAndPredictions = useCallback(async (groupId: string) => {
+    const ts = Date.now();
     const [groupRes, predsRes] = await Promise.all([
-      fetch(`/api/groups/${code}`),
-      fetch(`/api/predictions?groupId=${groupId}`),
+      fetch(`/api/groups/${code}?t=${ts}`, { cache: "no-store" }),
+      fetch(`/api/predictions?groupId=${groupId}&t=${ts}`, { cache: "no-store" }),
     ]);
     if (groupRes.ok) setGroup(await groupRes.json());
     const predsData = await predsRes.json();
@@ -46,9 +47,10 @@ export default function GroupClient({ code }: { code: string }) {
   }, [code]);
 
   const loadData = useCallback(async (sess: Session) => {
+    const ts = Date.now();
     const [groupRes, matchesRes] = await Promise.all([
-      fetch(`/api/groups/${code}`),
-      fetch("/api/matches"),
+      fetch(`/api/groups/${code}?t=${ts}`, { cache: "no-store" }),
+      fetch("/api/matches", { cache: "no-store" }),
     ]);
     const groupData = await groupRes.json();
     const matchesData = await matchesRes.json();
@@ -57,7 +59,7 @@ export default function GroupClient({ code }: { code: string }) {
     groupIdRef.current = groupData.id;
     setMatches(Array.isArray(matchesData) ? matchesData : []);
 
-    const predsRes = await fetch(`/api/predictions?groupId=${groupData.id}`);
+    const predsRes = await fetch(`/api/predictions?groupId=${groupData.id}&t=${ts}`, { cache: "no-store" });
     const predsData = await predsRes.json();
     if (Array.isArray(predsData)) {
       setPredictions(predsData);
@@ -76,7 +78,7 @@ export default function GroupClient({ code }: { code: string }) {
   useEffect(() => {
     pollRef.current = setInterval(() => {
       if (groupIdRef.current) fetchGroupAndPredictions(groupIdRef.current);
-    }, 30000);
+    }, 15000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchGroupAndPredictions]);
 

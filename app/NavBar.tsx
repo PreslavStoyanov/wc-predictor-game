@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 const RULES = [
   { label: "Exact score", pts: "10 pts" },
@@ -13,14 +13,36 @@ const RULES = [
 ];
 
 export default function NavBar() {
+  const router = useRouter();
+  const pathname = usePathname();
   const [username, setUsername] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
-  const pathname = usePathname();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("account");
     setUsername(stored ? JSON.parse(stored).username : null);
+    setShowMenu(false);
   }, [pathname]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function signOut() {
+    localStorage.removeItem("account");
+    setUsername(null);
+    setShowMenu(false);
+    router.push("/login");
+  }
 
   return (
     <>
@@ -30,6 +52,7 @@ export default function NavBar() {
             <span className="text-2xl">⚽</span>
             <span className="font-bold text-lg tracking-tight">WC 2026 Predictor</span>
           </Link>
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowRules(true)}
@@ -38,21 +61,53 @@ export default function NavBar() {
             >
               📋 Rules
             </button>
+
             {username ? (
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg px-3 py-1.5 transition"
-              >
-                <span>🏆</span>
-                <span>Groups</span>
-              </Link>
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu((v) => !v)}
+                  className="flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg px-3 py-1.5 transition"
+                >
+                  <span>👤</span>
+                  <span className="max-w-[100px] truncate">{username}</span>
+                  <span className="text-gray-400 text-xs">{showMenu ? "▲" : "▼"}</span>
+                </button>
+
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 w-44 bg-gray-900 border border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-800 transition"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <span>🏆</span> Groups
+                    </Link>
+                    <Link
+                      href="/groups"
+                      className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-800 transition"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <span>➕</span> Create / Join
+                    </Link>
+                    <div className="border-t border-gray-800" />
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-gray-800 transition"
+                    >
+                      <span>🚪</span> Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
-              <Link
-                href="/login"
-                className="text-sm bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg px-4 py-1.5 transition"
-              >
-                Sign In
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/login" className="text-sm text-gray-300 hover:text-white border border-gray-700 rounded-lg px-3 py-1.5 transition">
+                  Sign In
+                </Link>
+                <Link href="/register" className="text-sm bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg px-4 py-1.5 transition">
+                  Register
+                </Link>
+              </div>
             )}
           </div>
         </div>
