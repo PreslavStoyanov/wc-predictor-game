@@ -9,6 +9,7 @@ export async function GET() {
     .select("*")
     .order("match_date", { ascending: true });
 
+  const noCache = { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } };
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data, noCache);
 }

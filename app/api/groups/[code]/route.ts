@@ -17,5 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: { code: strin
   const participants = (group.group_participants as Array<{ id: string; group_id: string; account_id: string; accounts: { username: string } }>)
     .map((gp) => ({ id: gp.id, group_id: gp.group_id, account_id: gp.account_id, username: gp.accounts?.username ?? "Unknown" }));
 
-  return NextResponse.json({ ...group, participants });
+  return NextResponse.json({ ...group, participants }, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+  });
 }

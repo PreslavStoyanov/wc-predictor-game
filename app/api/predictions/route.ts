@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
     .select("id")
     .eq("group_id", groupId);
 
-  if (!gps?.length) return NextResponse.json([]);
+  const noCache = { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } };
+
+  if (!gps?.length) return NextResponse.json([], noCache);
 
   const gpIds = gps.map((g) => g.id);
   const { data, error } = await db
@@ -23,7 +25,7 @@ export async function GET(req: NextRequest) {
     .in("participant_id", gpIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  return NextResponse.json(data, noCache);
 }
 
 // POST /api/predictions — upsert a prediction

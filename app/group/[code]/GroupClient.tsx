@@ -36,10 +36,9 @@ export default function GroupClient({ code }: { code: string }) {
   const groupIdRef = useRef<string | null>(null);
 
   const fetchGroupAndPredictions = useCallback(async (groupId: string) => {
-    const ts = Date.now();
     const [groupRes, predsRes] = await Promise.all([
-      fetch(`/api/groups/${code}?t=${ts}`, { cache: "no-store" }),
-      fetch(`/api/predictions?groupId=${groupId}&t=${ts}`, { cache: "no-store" }),
+      fetch(`/api/groups/${code}`),
+      fetch(`/api/predictions?groupId=${groupId}`),
     ]);
     if (groupRes.ok) setGroup(await groupRes.json());
     const predsData = await predsRes.json();
@@ -47,10 +46,9 @@ export default function GroupClient({ code }: { code: string }) {
   }, [code]);
 
   const loadData = useCallback(async (sess: Session) => {
-    const ts = Date.now();
     const [groupRes, matchesRes] = await Promise.all([
-      fetch(`/api/groups/${code}?t=${ts}`, { cache: "no-store" }),
-      fetch("/api/matches", { cache: "no-store" }),
+      fetch(`/api/groups/${code}`),
+      fetch("/api/matches"),
     ]);
     const groupData = await groupRes.json();
     const matchesData = await matchesRes.json();
@@ -59,7 +57,7 @@ export default function GroupClient({ code }: { code: string }) {
     groupIdRef.current = groupData.id;
     setMatches(Array.isArray(matchesData) ? matchesData : []);
 
-    const predsRes = await fetch(`/api/predictions?groupId=${groupData.id}&t=${ts}`, { cache: "no-store" });
+    const predsRes = await fetch(`/api/predictions?groupId=${groupData.id}`);
     const predsData = await predsRes.json();
     if (Array.isArray(predsData)) {
       setPredictions(predsData);
@@ -203,7 +201,7 @@ export default function GroupClient({ code }: { code: string }) {
         {(["predictions", "leaderboard", "participants"] as Tab[]).map((t) => (
           <button
             key={t}
-            onClick={() => { setTab(t); if ((t === "leaderboard" || t === "participants") && group) fetchGroupAndPredictions(group.id); }}
+            onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition capitalize ${tab === t ? "bg-green-600 text-white" : "text-gray-400 hover:text-white"}`}
           >
             {t}
