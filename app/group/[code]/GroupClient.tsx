@@ -173,8 +173,6 @@ export default function GroupClient({ code }: { code: string }) {
 
   const leaderboard = buildLeaderboard();
   const groupedMatches = groupMatchesByStage();
-  const myRank = leaderboard.findIndex((e) => e.participantId === session.participantId) + 1;
-  const myEntry = leaderboard.find((e) => e.participantId === session.participantId);
 
   return (
     <div>
@@ -182,10 +180,6 @@ export default function GroupClient({ code }: { code: string }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">{group?.name}</h1>
-          <p className="text-gray-400 text-sm">
-            Welcome, <span className="text-white font-medium">{session.username}</span>
-            {myEntry && <> · <span className="text-yellow-400">{myEntry.totalPoints} pts</span> · #{myRank}</>}
-          </p>
         </div>
         <button
           onClick={copyInviteLink}
