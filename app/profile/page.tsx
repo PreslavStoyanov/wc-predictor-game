@@ -118,7 +118,7 @@ export default function ProfilePage() {
       {participants.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <p className="mb-4">You haven&apos;t joined any groups yet.</p>
-          <Link href="/" className="bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-lg font-medium transition">
+          <Link href="/groups" className="bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-lg font-medium transition">
             Join or Create a Group
           </Link>
         </div>
@@ -145,7 +145,7 @@ export default function ProfilePage() {
               </button>
             ))}
             <Link
-              href="/"
+              href="/groups"
               className="block w-full text-center text-sm text-gray-400 hover:text-white border border-dashed border-gray-700 rounded-xl px-4 py-3 transition hover:border-gray-500 mt-2"
             >
               + Join another group

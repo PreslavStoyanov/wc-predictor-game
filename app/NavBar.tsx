@@ -16,7 +16,7 @@ export default function NavBar() {
   return (
     <header className="border-b border-gray-800 bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+        <Link href={username ? "/profile" : "/login"} className="flex items-center gap-2 hover:opacity-80 transition">
           <span className="text-2xl">⚽</span>
           <span className="font-bold text-lg tracking-tight">WC 2026 Predictor</span>
         </Link>

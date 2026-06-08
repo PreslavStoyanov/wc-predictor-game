@@ -13,6 +13,7 @@ async function hashPassword(password: string): Promise<string> {
 
 // POST /api/auth  { username, password }
 // Auto-detects: creates account if new, verifies if existing
+// Also links any existing participants with matching username to this account
 export async function POST(req: NextRequest) {
   const { username, password } = await req.json();
   if (!username?.trim() || !password?.trim()) {
@@ -28,21 +29,31 @@ export async function POST(req: NextRequest) {
     .eq("username", username.trim())
     .single();
 
+  let account;
+
   if (!existing) {
-    // Register
-    const { data: account, error } = await db
+    // Register new account
+    const { data: newAccount, error } = await db
       .from("accounts")
       .insert({ username: username.trim(), password_hash: hash })
       .select()
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ account, isNew: true });
+    account = newAccount;
+  } else {
+    // Login — verify password
+    if (existing.password_hash !== hash) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+    }
+    account = existing;
   }
 
-  // Login — verify password
-  if (existing.password_hash !== hash) {
-    return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
-  }
+  // Auto-link any participants with matching username that aren't linked yet
+  await db
+    .from("participants")
+    .update({ account_id: account.id })
+    .eq("username", username.trim())
+    .is("account_id", null);
 
-  return NextResponse.json({ account: existing, isNew: false });
+  return NextResponse.json({ account, isNew: !existing });
 }
