@@ -62,8 +62,6 @@ export default function GroupClient({ code }: { code: string }) {
   const [localPreds, setLocalPreds] = useState<Record<string, { home: string; away: string }>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
-  const [usernameInput, setUsernameInput] = useState("");
-  const [joiningError, setJoiningError] = useState("");
 
   const loadData = useCallback(async (sess: Session) => {
     const [groupRes, matchesRes] = await Promise.all([
@@ -96,34 +94,41 @@ export default function GroupClient({ code }: { code: string }) {
   }, [code]);
 
   useEffect(() => {
-    const stored = localStorage.getItem(`session_${code}`);
-    if (stored) {
-      const sess = JSON.parse(stored) as Session;
+    const account = localStorage.getItem("account");
+    if (!account) {
+      // Not logged in — send to login, come back here after
+      router.replace(`/login?redirect=/group/${code}`);
+      return;
+    }
+
+    const acc = JSON.parse(account);
+
+    // Auto-join with account username if not already in this group
+    const existingSession = localStorage.getItem(`session_${code}`);
+    if (existingSession) {
+      const sess = JSON.parse(existingSession) as Session;
       setSession(sess);
       loadData(sess);
     } else {
-      setLoading(false);
+      // Auto-join using account credentials
+      fetch(`/api/groups/${code}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: acc.username, accountId: acc.id }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.participant) {
+            const sess = { participantId: data.participant.id, username: data.participant.username };
+            localStorage.setItem(`session_${code}`, JSON.stringify(sess));
+            setSession(sess);
+            loadData(sess);
+          } else {
+            setLoading(false);
+          }
+        });
     }
-  }, [code, loadData]);
-
-  async function handleJoin(e: React.FormEvent) {
-    e.preventDefault();
-    setJoiningError("");
-    if (!usernameInput.trim()) return;
-    const stored = localStorage.getItem("account");
-    const accountId = stored ? JSON.parse(stored).id : null;
-    const res = await fetch(`/api/groups/${code}/join`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: usernameInput, accountId }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setJoiningError(data.error); return; }
-    const sess = { participantId: data.participant.id, username: data.participant.username };
-    localStorage.setItem(`session_${code}`, JSON.stringify(sess));
-    setSession(sess);
-    loadData(sess);
-  }
+  }, [code, loadData, router]);
 
   async function savePrediction(matchId: string) {
     if (!session) return;
@@ -213,27 +218,11 @@ export default function GroupClient({ code }: { code: string }) {
     );
   }
 
-  // Not in group yet
+  // Still joining (auto-join in progress)
   if (!session) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="text-4xl mb-4">👋</div>
-        <h1 className="text-2xl font-bold mb-2">You have been invited!</h1>
-        <p className="text-gray-400 mb-6">Enter a username to join and start predicting.</p>
-        <form onSubmit={handleJoin} className="w-full max-w-sm space-y-4">
-          <input
-            type="text"
-            value={usernameInput}
-            onChange={(e) => setUsernameInput(e.target.value)}
-            placeholder="Your username"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
-            required
-          />
-          {joiningError && <p className="text-red-400 text-sm">{joiningError}</p>}
-          <button type="submit" className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-lg transition">
-            Join Group
-          </button>
-        </form>
+      <div className="flex items-center justify-center py-24">
+        <div className="text-gray-400">Joining group...</div>
       </div>
     );
   }
