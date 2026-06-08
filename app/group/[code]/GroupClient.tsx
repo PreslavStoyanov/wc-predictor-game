@@ -95,7 +95,7 @@ export default function GroupClient({ code }: { code: string }) {
       fetch(`/api/groups/${code}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: acc.username, accountId: acc.id }),
+        body: JSON.stringify({ accountId: acc.id }),
       })
         .then((r) => r.json())
         .then((data) => {

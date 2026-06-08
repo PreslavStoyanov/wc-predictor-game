@@ -28,7 +28,7 @@ export default function GroupsPage() {
       const res = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: groupName, username: account.username, accountId: account.id }),
+        body: JSON.stringify({ name: groupName, accountId: account.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -54,7 +54,7 @@ export default function GroupsPage() {
       const res = await fetch(`/api/groups/${code}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: account.username, accountId: account.id }),
+        body: JSON.stringify({ accountId: account.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

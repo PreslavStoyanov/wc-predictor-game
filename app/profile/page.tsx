@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+
 import Link from "next/link";
 import { calculatePoints } from "@/lib/scoring";
 
@@ -78,27 +79,14 @@ export default function ProfilePage() {
     loadProfile(acc);
   }, [router, loadProfile]);
 
-  function signOut() {
-    localStorage.removeItem("account");
-    router.push("/login");
-  }
-
   if (loading) return <div className="flex items-center justify-center py-24 text-gray-400">Loading...</div>;
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{account?.username}</h1>
-          <p className="text-gray-400 text-sm">{groupStats.length} group{groupStats.length !== 1 ? "s" : ""}</p>
-        </div>
-        <button
-          onClick={signOut}
-          className="text-sm text-gray-400 hover:text-white transition border border-gray-700 rounded-lg px-4 py-2"
-        >
-          Sign Out
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">{account?.username}</h1>
+        <p className="text-gray-400 text-sm">{groupStats.length} group{groupStats.length !== 1 ? "s" : ""}</p>
       </div>
 
       {/* Groups grid */}

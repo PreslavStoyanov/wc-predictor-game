@@ -8,19 +8,19 @@ export async function GET(req: NextRequest) {
   if (!groupId) return NextResponse.json({ error: "groupId required" }, { status: 400 });
 
   const db = getServiceClient();
-  // Get participant IDs for this group first
-  const { data: participants } = await db
-    .from("participants")
+
+  const { data: gps } = await db
+    .from("group_participants")
     .select("id")
     .eq("group_id", groupId);
 
-  if (!participants?.length) return NextResponse.json([]);
+  if (!gps?.length) return NextResponse.json([]);
 
-  const participantIds = participants.map((p) => p.id);
+  const gpIds = gps.map((g) => g.id);
   const { data, error } = await db
     .from("predictions")
     .select("*")
-    .in("participant_id", participantIds);
+    .in("participant_id", gpIds);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
 
   const db = getServiceClient();
 
-  // Check match hasn't started yet
   const { data: match } = await db
     .from("matches")
     .select("match_date, is_finished")
@@ -51,13 +50,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await db
     .from("predictions")
     .upsert(
-      {
-        participant_id: participantId,
-        match_id: matchId,
-        home_score: homeScore,
-        away_score: awayScore,
-        updated_at: new Date().toISOString(),
-      },
+      { participant_id: participantId, match_id: matchId, home_score: homeScore, away_score: awayScore, updated_at: new Date().toISOString() },
       { onConflict: "participant_id,match_id" }
     )
     .select()

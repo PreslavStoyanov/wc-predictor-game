@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServiceClient } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
+import { getServiceClient } from "@/lib/supabase";
 
 // GET /api/profile?accountId=xxx
 export async function GET(req: NextRequest) {
@@ -9,28 +9,31 @@ export async function GET(req: NextRequest) {
 
   const db = getServiceClient();
 
-  // Get all participants linked to this account
-  const { data: participants, error: pErr } = await db
-    .from("participants")
-    .select("*, groups(*)")
+  const { data: gps, error: gpErr } = await db
+    .from("group_participants")
+    .select("id, group_id, account_id, joined_at, groups(*)")
     .eq("account_id", accountId);
 
-  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
-  if (!participants?.length) return NextResponse.json({ participants: [], predictions: [], matches: [] });
+  if (gpErr) return NextResponse.json({ error: gpErr.message }, { status: 500 });
+  if (!gps?.length) return NextResponse.json({ participants: [], predictions: [], matches: [] });
 
-  const participantIds = participants.map((p) => p.id);
+  const gpIds = gps.map((g) => g.id);
 
-  // Get all predictions for these participants
-  const { data: predictions } = await db
-    .from("predictions")
-    .select("*")
-    .in("participant_id", participantIds);
+  const [predsRes, matchesRes] = await Promise.all([
+    db.from("predictions").select("*").in("participant_id", gpIds),
+    db.from("matches").select("*").order("match_date", { ascending: true }),
+  ]);
 
-  // Get all matches
-  const { data: matches } = await db
-    .from("matches")
-    .select("*")
-    .order("match_date", { ascending: true });
+  // Normalize: add username from account
+  const { data: account } = await db.from("accounts").select("username").eq("id", accountId).single();
 
-  return NextResponse.json({ participants, predictions: predictions ?? [], matches: matches ?? [] });
+  const participants = gps.map((gp) => ({
+    id: gp.id,
+    group_id: gp.group_id,
+    account_id: gp.account_id,
+    username: account?.username ?? "Unknown",
+    groups: gp.groups,
+  }));
+
+  return NextResponse.json({ participants, predictions: predsRes.data ?? [], matches: matchesRes.data ?? [] });
 }

@@ -7,15 +7,14 @@ function generateCode(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, username, accountId } = await req.json();
-  if (!name?.trim() || !username?.trim()) {
-    return NextResponse.json({ error: "Name and username required" }, { status: 400 });
+  const { name, accountId } = await req.json();
+  if (!name?.trim() || !accountId) {
+    return NextResponse.json({ error: "Name and accountId required" }, { status: 400 });
   }
 
   const db = getServiceClient();
   let code = generateCode();
 
-  // Ensure unique code
   let exists = true;
   while (exists) {
     const { data } = await db.from("groups").select("id").eq("invite_code", code).single();
@@ -31,13 +30,16 @@ export async function POST(req: NextRequest) {
 
   if (groupError) return NextResponse.json({ error: groupError.message }, { status: 500 });
 
-  const { data: participant, error: partError } = await db
-    .from("participants")
-    .insert({ username: username.trim(), group_id: group.id, account_id: accountId ?? null })
-    .select()
+  const { data: gp, error: gpError } = await db
+    .from("group_participants")
+    .insert({ group_id: group.id, account_id: accountId })
+    .select("*, accounts(username)")
     .single();
 
-  if (partError) return NextResponse.json({ error: partError.message }, { status: 500 });
+  if (gpError) return NextResponse.json({ error: gpError.message }, { status: 500 });
 
-  return NextResponse.json({ group, participant });
+  return NextResponse.json({
+    group,
+    participant: { id: gp.id, group_id: gp.group_id, account_id: gp.account_id, username: (gp.accounts as { username: string }).username },
+  });
 }

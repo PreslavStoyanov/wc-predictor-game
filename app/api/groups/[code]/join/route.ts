@@ -3,10 +3,11 @@ export const dynamic = "force-dynamic";
 import { getServiceClient } from "@/lib/supabase";
 
 export async function POST(req: NextRequest, { params }: { params: { code: string } }) {
-  const { username, accountId } = await req.json();
-  if (!username?.trim()) return NextResponse.json({ error: "Username required" }, { status: 400 });
+  const { accountId } = await req.json();
+  if (!accountId) return NextResponse.json({ error: "accountId required — please sign in first" }, { status: 400 });
 
   const db = getServiceClient();
+
   const { data: group } = await db
     .from("groups")
     .select("id")
@@ -15,28 +16,31 @@ export async function POST(req: NextRequest, { params }: { params: { code: strin
 
   if (!group) return NextResponse.json({ error: "Group not found" }, { status: 404 });
 
-  // Check if username already exists in this group
+  // Check if already joined
   const { data: existing } = await db
-    .from("participants")
-    .select("*")
-    .eq("username", username.trim())
+    .from("group_participants")
+    .select("*, accounts(username)")
     .eq("group_id", group.id)
+    .eq("account_id", accountId)
     .single();
 
   if (existing) {
-    // If account not yet linked, link it now
-    if (accountId && !existing.account_id) {
-      await db.from("participants").update({ account_id: accountId }).eq("id", existing.id);
-    }
-    return NextResponse.json({ participant: { ...existing, account_id: accountId ?? existing.account_id }, rejoined: true });
+    return NextResponse.json({
+      participant: { id: existing.id, group_id: existing.group_id, account_id: existing.account_id, username: (existing.accounts as { username: string }).username },
+      rejoined: true,
+    });
   }
 
-  const { data: participant, error } = await db
-    .from("participants")
-    .insert({ username: username.trim(), group_id: group.id, account_id: accountId ?? null })
-    .select()
+  const { data: gp, error } = await db
+    .from("group_participants")
+    .insert({ group_id: group.id, account_id: accountId })
+    .select("*, accounts(username)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ participant, rejoined: false });
+
+  return NextResponse.json({
+    participant: { id: gp.id, group_id: gp.group_id, account_id: gp.account_id, username: (gp.accounts as { username: string }).username },
+    rejoined: false,
+  });
 }
